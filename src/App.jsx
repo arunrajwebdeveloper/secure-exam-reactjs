@@ -5,6 +5,7 @@ import ExamEndCard from "./components/ExamEndCard";
 import QuestionCard from "./components/QuestionCard";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import AwayModal from "./components/AwayModal";
 
 // Main ExamPage component
 const App = () => {
@@ -98,6 +99,9 @@ const App = () => {
   const perfStartRef = useRef(null); // performance.now() at exam start
   const endTimestampRef = useRef(null); // absolute exam end timestamp (Date.now-based)
 
+  const awayTimerRef = useRef(null); // Away modal ref
+  const [showAwayModal, setShowAwayModal] = useState(null);
+
   /**
    * Displays a custom alert modal.
    * @param {string} message - The message to display in the modal.
@@ -170,6 +174,7 @@ const App = () => {
 
     setExamEnded(true); // Mark exam as officially ended
     setShowGracePeriodModal(false); // Hide grace period modal if open
+    setShowAwayModal(false);
     closeModal(); // Close any other custom alerts
 
     logActivity("Exam submitted.");
@@ -250,7 +255,10 @@ const App = () => {
 
   // Effect 3: Manage the grace period countdown timer
   useEffect(() => {
-    if (showGracePeriodModal && gracePeriodCountdown > 0) {
+    if (
+      (showGracePeriodModal && gracePeriodCountdown > 0) ||
+      (showAwayModal && gracePeriodCountdown > 0)
+    ) {
       graceTimerIntervalRef.current = setInterval(() => {
         setGracePeriodCountdown((prevCount) => {
           if (prevCount <= 1) {
@@ -262,9 +270,17 @@ const App = () => {
           return prevCount - 1;
         });
       }, 1000);
-    } else if (gracePeriodCountdown === 0 && showGracePeriodModal) {
+    } else if (
+      (gracePeriodCountdown === 0 && showGracePeriodModal) ||
+      (gracePeriodCountdown === 0 && showAwayModal)
+    ) {
       // If countdown is already 0 but modal is still showing (e.g., direct submit), close it
-      setShowGracePeriodModal(false);
+      if (showGracePeriodModal) {
+        setShowGracePeriodModal(false);
+      }
+      if (showAwayModal) {
+        setShowAwayModal(false);
+      }
     }
 
     // Cleanup function
@@ -274,7 +290,12 @@ const App = () => {
         graceTimerIntervalRef.current = null;
       }
     };
-  }, [showGracePeriodModal, gracePeriodCountdown, handleSubmitExam]); // Dependencies: grace period logic
+  }, [
+    showGracePeriodModal,
+    showAwayModal,
+    gracePeriodCountdown,
+    handleSubmitExam,
+  ]); // Dependencies: grace period logic
 
   /**
    * Requests fullscreen mode for the exam container.
@@ -338,8 +359,39 @@ const App = () => {
           "You switched tabs or minimized the browser. This activity has been logged."
         ); // Use custom alert
         // In a strict exam, you might penalize the user or end the exam here.
+
+        // awayTimerRef.current = setTimeout(() => {
+        //   closeModal();
+        //   setShowAwayModal(true);
+        //   setGracePeriodCountdown(10);
+        //   graceTimerIntervalRef.current = setInterval(() => {
+        //     setGracePeriodCountdown((prev) => {
+        //       if (prev <= 1) {
+        //         clearInterval(graceTimerIntervalRef.current);
+        //         graceTimerIntervalRef.current = null;
+        //         setShowAwayModal(false);
+        //         handleSubmitExam();
+        //         return 0;
+        //       }
+        //       return prev - 1;
+        //     });
+        //   }, 1000);
+        // }, 5000);
       } else {
         logActivity("Tab visibility changed to visible");
+
+        // Clear away modal countdown and timer
+        // if (awayTimerRef.current) {
+        //   clearTimeout(awayTimerRef.current);
+        //   awayTimerRef.current = null;
+        // }
+        // if (graceTimerIntervalRef.current) {
+        //   clearInterval(graceTimerIntervalRef.current);
+        //   graceTimerIntervalRef.current = null;
+        // }
+
+        // setShowAwayModal(false);
+        // setGracePeriodCountdown(null);
       }
     };
 
@@ -352,6 +404,41 @@ const App = () => {
         "The exam window lost focus. This activity has been logged."
       ); // Use custom alert
       // You might consider more severe actions here, like ending the exam.
+
+      awayTimerRef.current = setTimeout(() => {
+        closeModal();
+        setShowAwayModal(true);
+        setGracePeriodCountdown(10);
+        graceTimerIntervalRef.current = setInterval(() => {
+          setGracePeriodCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(graceTimerIntervalRef.current);
+              graceTimerIntervalRef.current = null;
+              setShowAwayModal(false);
+              handleSubmitExam();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      }, 5000);
+    };
+
+    const handleWindowFocus = () => {
+      logActivity("Window regained focus");
+
+      // Clear away modal countdown and timer
+      if (awayTimerRef.current) {
+        clearTimeout(awayTimerRef.current);
+        awayTimerRef.current = null;
+      }
+      if (graceTimerIntervalRef.current) {
+        clearInterval(graceTimerIntervalRef.current);
+        graceTimerIntervalRef.current = null;
+      }
+
+      setShowAwayModal(false);
+      setGracePeriodCountdown(null);
     };
 
     /**
@@ -482,6 +569,7 @@ const App = () => {
     // Attach all event listeners
     document.addEventListener("fullscreenchange", handleFullScreenChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleWindowFocus);
     window.addEventListener("blur", handleWindowBlur);
     document.addEventListener("copy", handleCopyCutPaste);
     document.addEventListener("cut", handleCopyCutPaste);
@@ -499,12 +587,17 @@ const App = () => {
     return () => {
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleWindowFocus);
       window.removeEventListener("blur", handleWindowBlur);
       document.removeEventListener("copy", handleCopyCutPaste);
       document.removeEventListener("cut", handleCopyCutPaste);
       document.removeEventListener("paste", handleCopyCutPaste);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("contextmenu", handleKeyDown);
+
+      if (graceTimerIntervalRef.current) {
+        clearInterval(graceTimerIntervalRef.current);
+      }
     };
   }, [examStarted, examEnded]);
 
@@ -594,6 +687,10 @@ const App = () => {
     <div ref={examContainerRef} className="min-h-screen font-inter">
       {/* Custom Alert Modal (for general messages) */}
       {showModal && <Modal onClick={closeModal} modalMessage={modalMessage} />}
+
+      {showAwayModal && (
+        <AwayModal gracePeriodCountdown={gracePeriodCountdown} />
+      )}
 
       {/* Grace Period Modal (new) */}
       {showGracePeriodModal && (
