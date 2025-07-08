@@ -419,6 +419,18 @@ const App = () => {
         showCustomAlert("Page save is not allowed."); // Use custom alert
       }
 
+      // Prevent open tab / reopen tab
+      // if (
+      //   ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "t") ||
+      //   ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "t")
+      // ) {
+      //   logActivity(
+      //     "Blocked tab open / reopen attempt (Ctrl/Cmd+Shift+t) and (Ctrl/Cmd+t)"
+      //   );
+      //   e.preventDefault();
+      //   showCustomAlert("Tab open / Re-open is not allowed."); // Use custom alert
+      // }
+
       // Prevent Ctrl+Shift+I or Cmd+Shift+I
       if (
         (e.ctrlKey || e.metaKey) &&
