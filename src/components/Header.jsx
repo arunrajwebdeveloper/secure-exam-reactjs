@@ -2,10 +2,10 @@ import React from "react";
 
 function Header({
   remainingTime,
+  examStarted,
   examEnded,
   formatTime,
   toggleFullScreen,
-  showGracePeriodModal,
   isFullscreen,
 }) {
   return (
@@ -29,10 +29,10 @@ function Header({
         <div>
           <button
             onClick={toggleFullScreen} // Use the new toggleFullScreen function
-            disabled={examEnded || showGracePeriodModal}
+            disabled={isFullscreen && examStarted && !examEnded}
             className={`toggle-fullscreen-btn
                       ${
-                        examEnded || showGracePeriodModal
+                        isFullscreen && examStarted && !examEnded
                           ? "cursor-not-allowed"
                           : "cursor-pointer"
                       }`}

@@ -703,10 +703,10 @@ const App = () => {
       {/* Header section with title and timer */}
       <Header
         remainingTime={remainingTime}
+        examStarted={examStarted}
         examEnded={examEnded}
         formatTime={formatTime}
         toggleFullScreen={toggleFullScreen}
-        showGracePeriodModal={showGracePeriodModal}
         isFullscreen={isFullscreen}
       />
 

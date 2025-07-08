@@ -33,7 +33,6 @@ function QuestionCard({
               <div className="peer-disabled:bg-slate-500 w-[20px] h-[20px] rounded-full border-2 border-gray-400 flex items-center justify-center transition peer-checked:border-blue-600 peer-checked:bg-blue-600"></div>
               <div className="peer-disabled:bg-slate-500 w-[8px] h-[8px] absolute top-[6px] left-[6px] z-40 bg-white rounded-full scale-0 peer-checked:scale-100 transition-transform duration-200" />
             </div>
-
             <span className="ml-3 text-base text-white">{option.text}</span>
           </label>
         ))}
